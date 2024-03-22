@@ -82,7 +82,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_qr, container, false);
 
-
+// Este es un comentario de prueba
 
         spinnerSistemas = rootView.findViewById(R.id.spinnerSistemas);
         spinnerTipo = rootView.findViewById(R.id.spinnerTipo);
