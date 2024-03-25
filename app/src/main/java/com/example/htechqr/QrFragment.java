@@ -290,100 +290,122 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
 
         // Consulta Subsistemas
-        List<String> nombreFuentes = new ArrayList<>();
-        List<Subsistema> subFuentes = new ArrayList<>();
-        List<Integer> idsFuentes = new ArrayList<>();
-        List<String> nombreRedes = new ArrayList<>();
-        List<Subsistema> subRedes = new ArrayList<>();
-        List<Integer> idsRedes = new ArrayList<>();
-        List<String> nombrePlantas = new ArrayList<>();
-        List<Subsistema> subPlantas = new ArrayList<>();
-        List<Integer> idsPlantas = new ArrayList<>();
 
         detallesArray = response.optJSONArray("Subsistemas");
 
         if (detallesArray != null) {
+            List<String> nombreFuentes = new ArrayList<>();
+            List<Subsistema> subFuentes = new ArrayList<>();
+            List<Integer> idsFuentes = new ArrayList<>();
+            List<String> nombreRedes = new ArrayList<>();
+            List<Subsistema> subRedes = new ArrayList<>();
+            List<Integer> idsRedes = new ArrayList<>();
+            List<String> nombrePlantas = new ArrayList<>();
+            List<Subsistema> subPlantas = new ArrayList<>();
+            List<Integer> idsPlantas = new ArrayList<>();
+
             Log.i("msj", "Contenido del array detallesArray: " + detallesArray.toString());
+            // Crear un adaptador para el Spinner
+
+            String[] opciones = getResources().getStringArray(R.array.opciones_spinner);
+            ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, opciones);
+            adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerTipo.setAdapter(adapter1);
+            spinnerTipo.setSelection(idSubSector);
+
+            switch (idSubSector) {
+                case 0:
+                    if (detallesArray != null && detallesArray.length() > 0) {
+                        JSONArray fuentes = detallesArray.optJSONArray(0);
+                        try {
+                            for (int i = 0; i < fuentes.length(); i++) {
+                                JSONObject jsonObject = fuentes.getJSONObject(i);
+                                String nombre = jsonObject.getString("nombre");
+                                String idSubsistema = jsonObject.getString("idSubsistema");
+                                String tipo = jsonObject.getString("tipo");
+                                Subsistema fuentesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
+                                subFuentes.add(fuentesSubsistema);
+                                nombreFuentes.add(nombre);
+                                idsFuentes.add(Integer.valueOf(idSubsistema));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreFuentes);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spinnerSectores.setAdapter(adapter);
+                        int index = idsFuentes.indexOf(idSector);
+                        if (index != -1) {
+                            spinnerSectores.setSelection(index);
+                        }
+                        CargarConsultaDispositivo();
+                        Log.i("msj30", fuentes.toString());
+                    }
+                    break;
+
+                case 1:
+                    if (detallesArray != null && detallesArray.length() > 1) {
+                        JSONArray redes = detallesArray.optJSONArray(1);
+                        try {
+                            for (int i = 0; i < redes.length(); i++) {
+                                JSONObject jsonObject = redes.getJSONObject(i);
+                                String nombre = jsonObject.getString("nombre");
+                                String idSubsistema = jsonObject.getString("idSubsistema");
+                                String tipo = jsonObject.getString("tipo");
+                                Subsistema redesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
+                                subFuentes.add(redesSubsistema);
+                                nombreRedes.add(nombre);
+                                idsRedes.add(Integer.valueOf(idSubsistema));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreRedes);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spinnerSectores.setAdapter(adapter);
+                        Log.i("msj30", redes.toString());
+                        int index = idsRedes.indexOf(idSector);
+                        if (index != -1) {
+                            spinnerSectores.setSelection(index);
+                        }
+                    }
+                    break;
+
+                case 2:
+                    if (detallesArray != null && detallesArray.length() > 2) {
+                        JSONArray plantas = detallesArray.optJSONArray(2);
+                        try {
+                            for (int i = 0; i < plantas.length(); i++) {
+                                JSONObject jsonObject = plantas.getJSONObject(i);
+                                String nombre = jsonObject.getString("nombre");
+                                String idSubsistema = jsonObject.getString("idSubsistema");
+                                String tipo = jsonObject.getString("tipo");
+                                Subsistema plantasSubsistema = new Subsistema(idSubsistema, nombre, tipo);
+                                subPlantas.add(plantasSubsistema);
+                                nombrePlantas.add(nombre);
+                                idsPlantas.add(Integer.valueOf(idSubsistema));
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+
+                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombrePlantas);
+                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        spinnerSectores.setAdapter(adapter);
+                        Log.i("msj30", plantas.toString());
+                        int index = idsPlantas.indexOf(idSector);
+                        if (index != -1) {
+                            spinnerSectores.setSelection(index);
+                        }
+                    }
+                    break;
+            }
+            progressDialog.dismiss(); // Ocultar el diálogo de progreso
+            spinerON= false;
         } else {
             Log.e("msj", "El array detallesArray es nulo. " + response.toString());
         }
-
-
-        // Crear un adaptador para el Spinner
-
-        String[] opciones = getResources().getStringArray(R.array.opciones_spinner);
-        ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, opciones);
-        adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerTipo.setAdapter(adapter1);
-        spinnerTipo.setSelection(idSubSector);
-
-        switch (idSubSector) {
-            case 0:
-                if (detallesArray != null && detallesArray.length() > 0) {
-                    JSONArray fuentes = detallesArray.optJSONArray(0);
-                    try {
-                        for (int i = 0; i < fuentes.length(); i++) {
-                            JSONObject jsonObject = fuentes.getJSONObject(i);
-                            String nombre = jsonObject.getString("nombre");
-                            String idSubsistema = jsonObject.getString("idSubsistema");
-                            String tipo = jsonObject.getString("tipo");
-                            Subsistema fuentesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
-                            subFuentes.add(fuentesSubsistema);
-                            nombreFuentes.add(nombre);
-                            idsFuentes.add(Integer.valueOf(idSubsistema));
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreFuentes);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinnerSectores.setAdapter(adapter);
-                    Log.i("msj30", fuentes.toString());
-                }
-                break;
-
-            case 1:
-                if (detallesArray != null && detallesArray.length() > 1) {
-                    JSONArray redes = detallesArray.optJSONArray(1);
-                    try {
-                        for (int i = 0; i < redes.length(); i++) {
-                            JSONObject jsonObject = redes.getJSONObject(i);
-                            String nombre = jsonObject.getString("nombre");
-                            int id= Integer.parseInt(jsonObject.getString("idSubsistema"));
-                            nombreRedes.add(nombre);
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreRedes);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinnerSectores.setAdapter(adapter);
-                    Log.i("msj30", redes.toString());
-                }
-                break;
-
-            case 2:
-                if (detallesArray != null && detallesArray.length() > 2) {
-                    JSONArray plantas = detallesArray.optJSONArray(2);
-                    try {
-                        for (int i = 0; i < plantas.length(); i++) {
-                            JSONObject jsonObject = plantas.getJSONObject(i);
-                            String nombre = jsonObject.getString("nombre");
-                            nombrePlantas.add(nombre);
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombrePlantas);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinnerSectores.setAdapter(adapter);
-                    Log.i("msj30", plantas.toString());
-                }
-                break;
-        }
-        progressDialog.dismiss(); // Ocultar el diálogo de progreso
 
 
         // Consulta Dispositivos
@@ -501,11 +523,17 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     public void CamposLimpios(){
         txtIdTelefono.setText("-");
         txtNombre.setText("-");
+        txtID.setText("-");
         txtDescripcion.setText("-");
         txtBT.setText("-");
         txtTelefono.setText("-");
         txtSubradio.setText("-");
         txtVenSaldo.setText("-");
+        spinnerSistemas.setAdapter(null);
+        spinnerDispositivos.setAdapter(null);
+        spinnerSectores.setAdapter(null);
+        spinnerTipo.setAdapter(null);
+        spinnerRadios.setAdapter(null);
     }
     private void habilitarEdicion() {
         txtNombre.setEnabled(true);
@@ -537,7 +565,13 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         txtIdTelefono.setEnabled(false);
         btnConfirmar.setVisibility(View.GONE);
         btnScan.setVisibility(View.VISIBLE);
-        btnEditar.setVisibility(View.VISIBLE);
+        btnConsultar.setVisibility(View.VISIBLE);
+        btnEditar.setVisibility(View.GONE);
+        spinnerTipo.setEnabled(false);
+        spinnerSectores.setEnabled(false);
+        spinnerRadios.setEnabled(false);
+        spinnerSistemas.setEnabled(false);
+        spinnerDispositivos.setEnabled(false);
 
         // Aquí puedes guardar los cambios en la base de datos o realizar otra acción necesaria
     }
@@ -545,15 +579,32 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-        if ( btnEditar.getVisibility() == View.GONE) {
+
+
+        if (spinerON == true){
+
             if (parent.getId() == R.id.spinnerSistemas) {
+                progressDialog = new ProgressDialog(getContext());
+                progressDialog.setMessage("Cargando..."); // Mensaje que se mostrará durante la carga
+                progressDialog.setCancelable(false); // No permite cancelar el diálogo
+                progressDialog.show(); // Mostrar el diálogo de progreso
                 idSistema = position + 1;
+                spinerON=false;
+                Log.i("SPINER2","entro a ON1");
+                CargarConsultaSubsistema();
             } else if (parent.getId() == R.id.spinnerTipo) {
+                progressDialog = new ProgressDialog(getContext());
+                progressDialog.setMessage("Cargando..."); // Mensaje que se mostrará durante la carga
+                progressDialog.setCancelable(false); // No permite cancelar el diálogo
+                progressDialog.show(); // Mostrar el diálogo de progreso
                 idSubSector = position;
+                spinerON=false ;
+                Log.i("SPINER2","entro a ON2");
+                CargarConsultaSubsistema();
             }
         }
-            Log.i("SPINER2","entro");
-            CargarConsultaSubsistema();
+        spinerON=true;
+
     }
 
     @Override
