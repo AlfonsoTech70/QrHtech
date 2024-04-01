@@ -81,6 +81,7 @@ public class LoginFragment extends Fragment implements Response.Listener<JSONObj
         btnIngresar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnIngresar.setEnabled(false);
                 CargarWebService();
             }
         });

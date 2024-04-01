@@ -47,6 +47,8 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     Button btnScan, btnConsultar, btnEditar, btnConfirmar;
     String cadena;
+    boolean seguir= true;
+    int index;
     EditText txtResultado; //Número de serie
     TextView txtSistema;
     EditText txtSector;
@@ -57,13 +59,34 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     ProgressDialog progressDialog;
 
     EditText txtBT;
+
     EditText txtID;
+    JSONArray fuentes, redes, plantas;
     Spinner spinnerSistemas, spinnerSectores, spinnerRadios, spinnerDispositivos, spinnerTipo;
     EditText txtTelefono, txtIdTelefono;
     EditText txtDispositivo;
     EditText txtTipoRadio;
     EditText txtSubradio;
     EditText txtVenSaldo;
+    List<Dispositivo> dispositivos = new ArrayList<>();
+    List<Integer> idsDispositivos = new ArrayList<>();
+    List<String> nombresDispositivos = new ArrayList<>();
+    List<String> nombreFuentes = new ArrayList<>();
+    List<Subsistema> subFuentes = new ArrayList<>();
+    List<Integer> idsFuentes = new ArrayList<>();
+    List<String> nombreRedes = new ArrayList<>();
+    List<Subsistema> subRedes = new ArrayList<>();
+    List<Integer> idsRedes = new ArrayList<>();
+    List<String> nombrePlantas = new ArrayList<>();
+    List<Subsistema> subPlantas = new ArrayList<>();
+    List<Integer> idsPlantas = new ArrayList<>();
+    List<Radio> radios = new ArrayList<>();
+    List<Integer> idsRadios = new ArrayList<>();
+    List<String> nombresRadios = new ArrayList<>();
+    List<Sistema> sistemas = new ArrayList<>();
+    List<Integer> idsSistemas = new ArrayList<>(); // Arreglo de enteros para guardar los IDs
+    List<String> nombresSistemas = new ArrayList<>(); // Arreglo de strings para guardar los nombres de los sistemas
+
     // Lista de opciones para el spinner
     final String[] opciones = {
             "Fuentes de abastecimiento",
@@ -74,7 +97,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     private CookieManager cookieManager;
     JsonObjectRequest jsonRequestWebService;
 
-    boolean spinerON= false;
+    boolean spinerON= true;
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -113,7 +136,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         btnConfirmar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {CamposLimpios();
-               guardarCambios();
+                guardarCambios();
             }
         });
 
@@ -142,7 +165,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             @Override
             public void onClick(View v) {
                 cargarCookies();
-                 //CargarConsultaDispositivo();
+                //CargarConsultaDispositivo();
                 //CargarConsultaSistema();
                 //CargarConsultaSubsistema();
                 //CargarConsultaRadio();
@@ -150,9 +173,25 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             }
         });
 
-        spinnerSistemas.setOnItemSelectedListener(this);
-        spinnerTipo.setOnItemSelectedListener(this);
+        ableSpiners(false);
         return rootView;
+    }
+
+    void ableSpiners(boolean val){
+        if(val) {
+            spinnerSistemas.setOnItemSelectedListener(this);
+            spinnerTipo.setOnItemSelectedListener(this);
+            spinnerRadios.setOnItemSelectedListener(this);
+            spinnerDispositivos.setOnItemSelectedListener(this);
+            spinnerSectores.setOnItemSelectedListener(this);
+        }else{
+            spinnerSistemas.setOnItemSelectedListener(null);
+
+            spinnerTipo.setOnItemSelectedListener(null);
+            spinnerRadios.setOnItemSelectedListener(null);
+            spinnerDispositivos.setOnItemSelectedListener(null);
+            spinnerSectores.setOnItemSelectedListener(null);
+        }
     }
 
     private void iniciarEscaneo() {
@@ -198,17 +237,22 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     @Override
     public void onResponse(JSONObject response) {
+        ArrayAdapter<String> adapterTipo = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, opciones);
+
         //Consulta Detalles Dispositivo
         JSONArray detallesArray;
         detallesArray = response.optJSONArray("Detalles");
         if (detallesArray != null) {
             if (detallesArray.length() == 0) {
                 Utils.mostrarMensaje(getContext(), "Consulta Incorrecta.");
+                seguir=false;
                 CamposLimpios();
-                btnConsultar.setVisibility(View.GONE);
+                btnConsultar.setVisibility(View.VISIBLE);
                 btnScan.setVisibility(View.VISIBLE);
                 btnEditar.setVisibility(View.GONE);
+                progressDialog.dismiss(); // Ocultar el diálogo de progreso
             } else {
+                Log.i("msjSpinner", String.valueOf(idSubSector));
                 try {
                     JSONObject detallesObject = detallesArray.getJSONObject(0);
                     idSector = detallesObject.getInt("idSubsistema");
@@ -216,6 +260,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                     idSistema = detallesObject.getInt("idSistema");
                     idDispositivo = detallesObject.getInt("dispositivo");
                     idSubSector = detallesObject.getInt("tipo_subsistema");
+                    Log.i("msjSpinner", String.valueOf(idSubSector));
                     txtID.setText(detallesObject.optString("idDispositivo"));
                     txtIdTelefono.setText(detallesObject.optString("telefono_num_serie"));
                     txtNombre.setText(detallesObject.optString("nombre"));
@@ -232,255 +277,231 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                 btnScan.setVisibility(View.VISIBLE);
                 btnEditar.setVisibility(View.VISIBLE);
             }
-            CargarConsultaSistema();
-            CargarConsultaSubsistema();
+            if(seguir)
+                CargarConsultaSistema();
         }
 
         // Consulta Sistemas
-        List<Sistema> sistemas = new ArrayList<>();
-        List<Integer> idsSistemas = new ArrayList<>(); // Arreglo de enteros para guardar los IDs
-        List<String> nombresSistemas = new ArrayList<>(); // Arreglo de strings para guardar los nombres de los sistemas
+            detallesArray = response.optJSONArray("Sistemas");
+            if (detallesArray != null){
+                Log.i("msjjj", "Entro a Sistemas");
+                sistemas.clear();
+                idsSistemas.clear();
+                nombresSistemas.clear();
+                JSONObject detallesCompletos = new JSONObject();
+                try {
+                    detallesCompletos.put("Sistemas", detallesArray);
+                    // Imprimir el objeto completo en el registro
+                    Log.i("Consulta Completa", detallesCompletos.toString());
+                    Log.i("Consulta Completaa", detallesArray.toString());
+                    for (int i = 0; i < detallesArray.length(); i++) {
+                        try {
+                            JSONObject jsonObject = detallesArray.getJSONObject(i);
+                            String idSistema = jsonObject.getString("idSistema");
+                            String nombre = jsonObject.getString("nombre");
+                            String estado = jsonObject.getString("estado");
+                            String logo = jsonObject.getString("logo");
 
-        detallesArray = response.optJSONArray("Sistemas");
-        if (detallesArray != null){
-            JSONObject detallesCompletos = new JSONObject();
-            try {
-                detallesCompletos.put("Sistemas", detallesArray);
-                // Imprimir el objeto completo en el registro
-                Log.i("Consulta Completa", detallesCompletos.toString());
-                Log.i("Consulta Completaa", detallesArray.toString());
-                for (int i = 0; i < detallesArray.length(); i++) {
-                    try {
-                        JSONObject jsonObject = detallesArray.getJSONObject(i);
-                        String idSistema = jsonObject.getString("idSistema");
-                        String nombre = jsonObject.getString("nombre");
-                        String estado = jsonObject.getString("estado");
-                        String logo = jsonObject.getString("logo");
+                            // Crear objeto Sistema y añadirlo a la lista
+                            Sistema sistema = new Sistema(idSistema, nombre, logo, estado);
+                            sistemas.add(sistema);
 
-                        // Crear objeto Sistema y añadirlo a la lista
-                        Sistema sistema = new Sistema(idSistema, nombre, logo, estado);
-                        sistemas.add(sistema);
+                            // Agregar el ID del sistema al arreglo de IDs
+                            idsSistemas.add(Integer.valueOf(idSistema));
 
-                        // Agregar el ID del sistema al arreglo de IDs
-                        idsSistemas.add(Integer.valueOf(idSistema));
-
-                        // Agregar el nombre del sistema al arreglo de nombres
-                        nombresSistemas.add(nombre);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                            // Agregar el nombre del sistema al arreglo de nombres
+                            nombresSistemas.add(nombre);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
+
+                // Enlazar el ArrayList de nombres al Spinner
+                //Spinner spinner = rootfindViewById(R.id.spinner);
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombresSistemas);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerSistemas.setAdapter(adapter);
+
+                // Buscar el índice del ID seleccionado en el arreglo de IDs
+                int index = idsSistemas.indexOf(idSistema);
+                if (index != -1) {
+                    spinnerSistemas.setSelection(index);
+                }
+                CargarConsultaDispositivo();
             }
 
-            // Enlazar el ArrayList de nombres al Spinner
-            //Spinner spinner = rootfindViewById(R.id.spinner);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombresSistemas);
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            spinnerSistemas.setAdapter(adapter);
 
-            // Buscar el índice del ID seleccionado en el arreglo de IDs
-            int index = idsSistemas.indexOf(idSistema);
-            if (index != -1) {
-                spinnerSistemas.setSelection(index);
-            }
-            CargarConsultaDispositivo();
-        }
-
-
-        // Consulta Subsistemas
-
-        detallesArray = response.optJSONArray("Subsistemas");
-
-        if (detallesArray != null) {
-            List<String> nombreFuentes = new ArrayList<>();
-            List<Subsistema> subFuentes = new ArrayList<>();
-            List<Integer> idsFuentes = new ArrayList<>();
-            List<String> nombreRedes = new ArrayList<>();
-            List<Subsistema> subRedes = new ArrayList<>();
-            List<Integer> idsRedes = new ArrayList<>();
-            List<String> nombrePlantas = new ArrayList<>();
-            List<Subsistema> subPlantas = new ArrayList<>();
-            List<Integer> idsPlantas = new ArrayList<>();
-
-            Log.i("msj", "Contenido del array detallesArray: " + detallesArray.toString());
-            // Crear un adaptador para el Spinner
-
-            String[] opciones = getResources().getStringArray(R.array.opciones_spinner);
-            ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, opciones);
-            adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            spinnerTipo.setAdapter(adapter1);
-            spinnerTipo.setSelection(idSubSector);
-
-            switch (idSubSector) {
-                case 0:
-                    if (detallesArray != null && detallesArray.length() > 0) {
-                        JSONArray fuentes = detallesArray.optJSONArray(0);
-                        try {
-                            for (int i = 0; i < fuentes.length(); i++) {
-                                JSONObject jsonObject = fuentes.getJSONObject(i);
-                                String nombre = jsonObject.getString("nombre");
-                                String idSubsistema = jsonObject.getString("idSubsistema");
-                                String tipo = jsonObject.getString("tipo");
-                                Subsistema fuentesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
-                                subFuentes.add(fuentesSubsistema);
-                                nombreFuentes.add(nombre);
-                                idsFuentes.add(Integer.valueOf(idSubsistema));
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreFuentes);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        spinnerSectores.setAdapter(adapter);
-                        int index = idsFuentes.indexOf(idSector);
-                        if (index != -1) {
-                            spinnerSectores.setSelection(index);
-                        }
-                        CargarConsultaDispositivo();
-                        Log.i("msj30", fuentes.toString());
-                    }
-                    break;
-
-                case 1:
-                    if (detallesArray != null && detallesArray.length() > 1) {
-                        JSONArray redes = detallesArray.optJSONArray(1);
-                        try {
-                            for (int i = 0; i < redes.length(); i++) {
-                                JSONObject jsonObject = redes.getJSONObject(i);
-                                String nombre = jsonObject.getString("nombre");
-                                String idSubsistema = jsonObject.getString("idSubsistema");
-                                String tipo = jsonObject.getString("tipo");
-                                Subsistema redesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
-                                subFuentes.add(redesSubsistema);
-                                nombreRedes.add(nombre);
-                                idsRedes.add(Integer.valueOf(idSubsistema));
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreRedes);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        spinnerSectores.setAdapter(adapter);
-                        Log.i("msj30", redes.toString());
-                        int index = idsRedes.indexOf(idSector);
-                        if (index != -1) {
-                            spinnerSectores.setSelection(index);
-                        }
-                    }
-                    break;
-
-                case 2:
-                    if (detallesArray != null && detallesArray.length() > 2) {
-                        JSONArray plantas = detallesArray.optJSONArray(2);
-                        try {
-                            for (int i = 0; i < plantas.length(); i++) {
-                                JSONObject jsonObject = plantas.getJSONObject(i);
-                                String nombre = jsonObject.getString("nombre");
-                                String idSubsistema = jsonObject.getString("idSubsistema");
-                                String tipo = jsonObject.getString("tipo");
-                                Subsistema plantasSubsistema = new Subsistema(idSubsistema, nombre, tipo);
-                                subPlantas.add(plantasSubsistema);
-                                nombrePlantas.add(nombre);
-                                idsPlantas.add(Integer.valueOf(idSubsistema));
-                            }
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-
-                        ArrayAdapter<String> adapter = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombrePlantas);
-                        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        spinnerSectores.setAdapter(adapter);
-                        Log.i("msj30", plantas.toString());
-                        int index = idsPlantas.indexOf(idSector);
-                        if (index != -1) {
-                            spinnerSectores.setSelection(index);
-                        }
-                    }
-                    break;
-            }
-            progressDialog.dismiss(); // Ocultar el diálogo de progreso
-            spinerON= false;
-        } else {
-            Log.e("msj", "El array detallesArray es nulo. " + response.toString());
-        }
 
 
         // Consulta Dispositivos
-        detallesArray = response.optJSONArray("Dispositivos");
-        if (detallesArray != null){
-            List<Dispositivo> dispositivos = new ArrayList<>();
-            List<Integer> idsDispositivos = new ArrayList<>();
-            List<String> nombresDispositivos = new ArrayList<>();
-            if (detallesArray != null) {
-                for (int i = 0; i < detallesArray.length(); i++) {
-                    try {
-                        JSONObject jsonObject = detallesArray.getJSONObject(i);
-                        int idDispositivo = jsonObject.getInt("id");
-                        String nombreDispositivo = jsonObject.getString("nombre");
+            detallesArray = response.optJSONArray("Dispositivos");
+            if (detallesArray != null){
+                Log.i("msjjj", "Entro a Disp");
+                dispositivos.clear();
+                idsDispositivos.clear();
+                nombresDispositivos.clear();
 
-                        // Crear objeto Dispositivo y añadirlo a la lista
-                        Dispositivo dispositivo = new Dispositivo(idDispositivo, nombreDispositivo);
-                        dispositivos.add(dispositivo);
+                if (detallesArray != null) {
+                    for (int i = 0; i < detallesArray.length(); i++) {
+                        try {
+                            JSONObject jsonObject = detallesArray.getJSONObject(i);
+                            int idDispositivo = jsonObject.getInt("id");
+                            String nombreDispositivo = jsonObject.getString("nombre");
 
-                        // Agregar el ID del dispositivo al arreglo de IDs
-                        idsDispositivos.add(idDispositivo);
+                            // Crear objeto Dispositivo y añadirlo a la lista
+                            Dispositivo dispositivo = new Dispositivo(idDispositivo, nombreDispositivo);
+                            dispositivos.add(dispositivo);
 
-                        // Agregar el nombre del dispositivo al arreglo de nombres
-                        nombresDispositivos.add(nombreDispositivo);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
+                            // Agregar el ID del dispositivo al arreglo de IDs
+                            idsDispositivos.add(idDispositivo);
+
+                            // Agregar el nombre del dispositivo al arreglo de nombres
+                            nombresDispositivos.add(nombreDispositivo);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }
-                // Enlazar el ArrayList de nombres de dispositivos al Spinner (cambia según tus necesidades)
-                ArrayAdapter<String> adapterDispositivos = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombresDispositivos);
-                adapterDispositivos.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerDispositivos.setAdapter(adapterDispositivos);
+                    // Enlazar el ArrayList de nombres de dispositivos al Spinner (cambia según tus necesidades)
+                    ArrayAdapter<String> adapterDispositivos = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombresDispositivos);
+                    adapterDispositivos.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinnerDispositivos.setAdapter(adapterDispositivos);
 
-                // Buscar el índice del ID seleccionado en el arreglo de IDs de dispositivos
-                int indexDispositivo = idsDispositivos.indexOf(idDispositivo);
-                if (indexDispositivo != -1) {
-                    spinnerDispositivos.setSelection(indexDispositivo);
+                    // Buscar el índice del ID seleccionado en el arreglo de IDs de dispositivos
+                    int indexDispositivo = idsDispositivos.indexOf(idDispositivo);
+                    if (indexDispositivo != -1) {
+                        spinnerDispositivos.setSelection(indexDispositivo);
+                    }
+                    CargarConsultaRadio();
                 }
-                CargarConsultaRadio();
             }
-        }
+
+
 
 
 
         // Consulta Radios
-        JSONArray radiosArray = response.optJSONArray("Radios");
-        if (radiosArray != null) {
-            List<Radio> radios = new ArrayList<>();
-            List<Integer> idsRadios = new ArrayList<>();
-            List<String> nombresRadios = new ArrayList<>();
-            try {
-                for (int i = 0; i < radiosArray.length(); i++) {
-                    JSONObject jsonObject = radiosArray.getJSONObject(i);
-                    int idRadio = jsonObject.getInt("id");
-                    String nombreRadio = jsonObject.getString("radio");
-                    // Agregar el ID del dispositivo al arreglo de IDs
-                    Radio radio = new Radio(idRadio, nombreRadio);
-                    radios.add(radio);
-                    idsRadios.add(idRadio);
-                    nombresRadios.add(nombreRadio);
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            ArrayAdapter<String> adapterRadios = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombresRadios);
-            adapterRadios.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            spinnerRadios.setAdapter(adapterRadios);
 
-            // Buscar el índice del ID seleccionado en el arreglo de IDs de dispositivos
-            int indexRadio = idsRadios.indexOf(idRadio);
-            if (indexRadio != -1) {
-                spinnerRadios.setSelection(indexRadio);
+            JSONArray radiosArray = response.optJSONArray("Radios");
+            if (radiosArray != null) {
+                Log.i("msjjj", "Entro a Rad");
+                radios.clear();
+                idsRadios.clear();
+                nombresRadios.clear();
+                try {
+                    for (int i = 0; i < radiosArray.length(); i++) {
+                        JSONObject jsonObject = radiosArray.getJSONObject(i);
+                        int idRadio = jsonObject.getInt("id");
+                        String nombreRadio = jsonObject.getString("radio");
+                        // Agregar el ID del dispositivo al arreglo de IDs
+                        Radio radio = new Radio(idRadio, nombreRadio);
+                        radios.add(radio);
+                        idsRadios.add(idRadio);
+                        nombresRadios.add(nombreRadio);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                ArrayAdapter<String> adapterRadios = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombresRadios);
+                adapterRadios.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerRadios.setAdapter(adapterRadios);
+
+                // Buscar el índice del ID seleccionado en el arreglo de IDs de dispositivos
+                int indexRadio = idsRadios.indexOf(idRadio);
+                if (indexRadio != -1) {
+                    spinnerRadios.setSelection(indexRadio);
+                }
+                CargarConsultaSubsistema();
             }
-            CargarConsultaSubsistema();
-        }
+
+        // Consulta Subsistemas
+
+            detallesArray = response.optJSONArray("Subsistemas");
+
+            if (detallesArray != null) {
+                String[] opciones = getResources().getStringArray(R.array.opciones_spinner);
+                adapterTipo.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerTipo.setAdapter(adapterTipo);
+                spinnerTipo.setSelection(idSubSector);
+                Log.i("msjjj", "Entro a SubSistemas");
+                nombreFuentes.clear();
+                subFuentes.clear();
+                idsFuentes.clear();
+                nombreRedes.clear();
+                subRedes.clear();
+                idsRedes.clear();
+                nombrePlantas.clear();
+                subPlantas.clear();
+                idsPlantas.clear();
+
+
+                Log.i("msj", "Contenido del array detallesArray: " + detallesArray.toString());
+                // Crear un adaptador para el Spinner
+
+
+                if (detallesArray != null && detallesArray.length() > 0) {
+                     fuentes = detallesArray.optJSONArray(0);
+                    try {
+                        for (int i = 0; i < fuentes.length(); i++) {
+                            JSONObject jsonObject = fuentes.getJSONObject(i);
+                            String nombre = jsonObject.getString("nombre");
+                            String idSubsistema = jsonObject.getString("idSubsistema");
+                            String tipo = jsonObject.getString("tipo");
+                            Subsistema fuentesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
+                            subFuentes.add(fuentesSubsistema);
+                            nombreFuentes.add(nombre);
+                            idsFuentes.add(Integer.valueOf(idSubsistema));
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                if (detallesArray != null && detallesArray.length() > 1) {
+                    redes = detallesArray.optJSONArray(1);
+                    try {
+                        for (int i = 0; i < redes.length(); i++) {
+                            JSONObject jsonObject = redes.getJSONObject(i);
+                            String nombre = jsonObject.getString("nombre");
+                            String idSubsistema = jsonObject.getString("idSubsistema");
+                            String tipo = jsonObject.getString("tipo");
+                            Subsistema redesSubsistema = new Subsistema(idSubsistema, nombre, tipo);
+                            subFuentes.add(redesSubsistema);
+                            nombreRedes.add(nombre);
+                            idsRedes.add(Integer.valueOf(idSubsistema));
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (detallesArray != null && detallesArray.length() > 2) {
+                    plantas = detallesArray.optJSONArray(2);
+                    try {
+                        for (int i = 0; i < plantas.length(); i++) {
+                            JSONObject jsonObject = plantas.getJSONObject(i);
+                            String nombre = jsonObject.getString("nombre");
+                            String idSubsistema = jsonObject.getString("idSubsistema");
+                            String tipo = jsonObject.getString("tipo");
+                            Subsistema plantasSubsistema = new Subsistema(idSubsistema, nombre, tipo);
+                            subPlantas.add(plantasSubsistema);
+                            nombrePlantas.add(nombre);
+                            idsPlantas.add(Integer.valueOf(idSubsistema));
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                seleccionarSub();
+                progressDialog.dismiss(); // Ocultar el diálogo de progreso
+                //spinerON=true;
+                ableSpiners(true);
+                Log.e("msj", "cambio a true" );
+            } else {
+                //Log.e("msj", "El array detallesArray es nulo. " + response.toString());
+            }
     }
 
 
@@ -519,6 +540,12 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
         Log.i("msj2", url);
     }
+//    public void enviarDatos(JSONObject detalles) {
+//        String url = "https://webservice.htech.mx/insertar.php";
+//        jsonRequestWebService = new JsonObjectRequest(Request.Method.POST, url, );
+//        VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
+//        Log.i("msj2", url);
+//    }
 
     public void CamposLimpios(){
         txtIdTelefono.setText("-");
@@ -572,7 +599,9 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         spinnerRadios.setEnabled(false);
         spinnerSistemas.setEnabled(false);
         spinnerDispositivos.setEnabled(false);
-
+        JSONObject detalles = guardarJson(txtResultado, txtID, spinnerSistemas, spinnerSectores,
+                spinnerTipo, spinnerDispositivos, spinnerRadios, txtNombre,
+                txtDescripcion, txtBT, txtTelefono, txtIdTelefono);
         // Aquí puedes guardar los cambios en la base de datos o realizar otra acción necesaria
     }
 
@@ -580,17 +609,18 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
-
-        if (spinerON == true){
-
+        Log.i("msjspiner2", "Entra. "+ parent.toString() );
+        if (spinerON)
+        {
             if (parent.getId() == R.id.spinnerSistemas) {
+                ableSpiners(false);
                 progressDialog = new ProgressDialog(getContext());
                 progressDialog.setMessage("Cargando..."); // Mensaje que se mostrará durante la carga
                 progressDialog.setCancelable(false); // No permite cancelar el diálogo
                 progressDialog.show(); // Mostrar el diálogo de progreso
                 idSistema = position + 1;
-                spinerON=false;
                 Log.i("SPINER2","entro a ON1");
+                ableSpiners(false);
                 CargarConsultaSubsistema();
             } else if (parent.getId() == R.id.spinnerTipo) {
                 progressDialog = new ProgressDialog(getContext());
@@ -598,17 +628,107 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                 progressDialog.setCancelable(false); // No permite cancelar el diálogo
                 progressDialog.show(); // Mostrar el diálogo de progreso
                 idSubSector = position;
-                spinerON=false ;
                 Log.i("SPINER2","entro a ON2");
-                CargarConsultaSubsistema();
+                ableSpiners(false);
+                seleccionarSub();
             }
-        }
-        spinerON=true;
+            else if (parent.getId() == R.id.spinnerRadios) {
+                for (int i = 0; i < idsRadios.size(); i++) {
+                    Log.i("msjjj " + i, String.valueOf(idsRadios.get(i)));
+                }
+                idRadio = idsRadios.get(position) ;
+                Log.i("msjjj", String.valueOf(idRadio));
+                Log.i("msjjj", String.valueOf(position));
+                Log.i("SPINER2","entro a ON3");
+            }
+            else if (parent.getId() == R.id.spinnerDispositivos) {
+                for (int i = 0; i < idsDispositivos.size(); i++) {
+                    Log.i("msjjj " + i, String.valueOf(idsDispositivos.get(i)));
+                }
+                idDispositivo = idsDispositivos.get(position) ;
+                Log.i("msjjj", String.valueOf(idDispositivo));
+                Log.i("msjjj", String.valueOf(position));
+                Log.i("SPINER2","entro a ON4");
 
+            }
+//            ableSpiners(true);
+//            spinerON= true;
+        }
     }
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
 
+    }
+    public static JSONObject guardarJson(EditText txtNS, EditText txtID, Spinner spinnerSistemas, Spinner spinnerSectores,
+                                         Spinner spinnerTipo, Spinner spinnerDispositivos, Spinner spinnerRadios,
+                                         EditText txtnombre, EditText txtDescripcion, EditText txtBT, EditText txtTel,
+                                         EditText txtIdTel) {
+        JSONObject detalles = new JSONObject();
+
+        try {
+            detalles.put("txtNS", txtNS.getText().toString());
+            detalles.put("txtID", txtID.getText().toString());
+            int sis, sec, tip, disp, rad;
+            sis= spinnerSistemas.getSelectedItemPosition();
+            Log.i("msjSis", String.valueOf(sis));
+//            detalles.put("spinnerSistemas", spinnerSistemas.getSelectedItem().toString());
+//            detalles.put("spinnerSectores", spinnerSectores.getSelectedItem().toString());
+//            detalles.put("spinnerTipo", spinnerTipo.getSelectedItem().toString());
+//            detalles.put("spinnerDispositivos", spinnerDispositivos.getSelectedItem().toString());
+           // detalles.put("spinnerRadios", spinnerRadios.getSelectedItem().toString());
+            detalles.put("txtnombre", txtnombre.getText().toString());
+            detalles.put("txtDescripcion", txtDescripcion.getText().toString());
+            detalles.put("txtBT", txtBT.getText().toString());
+            detalles.put("txtTel", txtTel.getText().toString());
+            detalles.put("txtIdTel", txtIdTel.getText().toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return detalles;
+    }
+
+    public void seleccionarSub() {
+        Log.i("msjSpinner", String.valueOf(idSubSector));
+        switch (idSubSector) {
+
+            case 0:
+                ArrayAdapter<String> adapter0 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreFuentes);
+                adapter0.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerSectores.setAdapter(adapter0);
+                int index = idsFuentes.indexOf(idSector);
+                if (index != -1) {
+                    spinnerSectores.setSelection(index);
+                }
+
+                Log.i("msj30", fuentes.toString());
+                progressDialog.dismiss(); // Ocultar el diálogo de progreso
+                break;
+
+            case 1:
+                ArrayAdapter<String> adapter1 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombreRedes);
+                adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerSectores.setAdapter(adapter1);
+                Log.i("msj30", redes.toString());
+                index = idsRedes.indexOf(idSector);
+                if (index != -1) {
+                    spinnerSectores.setSelection(index);
+                }
+                progressDialog.dismiss(); // Ocultar el diálogo de progreso
+                break;
+
+            case 2:
+                ArrayAdapter<String> adapter2 = new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item, nombrePlantas);
+                adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerSectores.setAdapter(adapter2);
+                Log.i("msj30", plantas.toString());
+                index = idsPlantas.indexOf(idSector);
+                if (index != -1) {
+                    spinnerSectores.setSelection(index);
+                }
+                progressDialog.dismiss(); // Ocultar el diálogo de progreso
+                break;
+        }
+        ableSpiners(true);
     }
 }
