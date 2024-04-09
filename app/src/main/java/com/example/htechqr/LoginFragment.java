@@ -3,6 +3,7 @@ package com.example.htechqr;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -45,9 +46,8 @@ public class LoginFragment extends Fragment implements Response.Listener<JSONObj
         txtContraseña = ventana.findViewById(R.id.txtContraseña);
         txtUsuario = ventana.findViewById(R.id.txtUsuario);
         btnIngresar = ventana.findViewById(R.id.btnIngresar);
-
+       // btnIngresar.setBackgroundColor(Color.rgb(33,150,243));
         btnIngresar.setVisibility(View.VISIBLE); // Aseguramos que el botón sea visible
-
         //btnIngresar.setEnabled(false); // Deshabilitado inicialmente
 
         txtUsuario.addTextChangedListener(new TextWatcher() {

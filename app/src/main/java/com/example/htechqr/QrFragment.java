@@ -2,13 +2,18 @@ package com.example.htechqr;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.webkit.CookieManager;
 import java.net.HttpCookie;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -47,18 +52,21 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         String cookies = cookieManager.getCookie("https://webservice.htech.mx"); // Reemplaza con tu URL
     }
 
-    Button btnScan, btnConsultar, btnEditar, btnConfirmar;
+    Button btnScan, btnConsultar, btnEditar, btnConfirmar,btnRegistrar,btnconfirmarReg;
+    String azul="0x025C91" ;
+    String amarillo ="0XFFC61A";
+    int opcion;
     Calendar calendar;
     String cadena;
-    boolean seguir= true;
+    boolean seguir, campoNS= true;
     int index;
-    int idGrupo;
+    int idGrupo=0;
     EditText txtResultado; //Número de serie
-    TextView txtSistema;
-    EditText txtSector;
     EditText txtNombre;
-    int idSistema=0;
-    int idRadio, idSector, idDispositivo, idTipoSubSistema;
+    int idSistema=1;
+    int idRadio, idDispositivo=1;
+    int idSector = 5;
+    int idTipoSubSistema=1;
     EditText txtDescripcion;
     ProgressDialog progressDialog;
 
@@ -103,15 +111,15 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     boolean spinerON= true;
 
-    @SuppressLint("MissingInflatedId")
+    @SuppressLint({"MissingInflatedId", "ResourceAsColor"})
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_qr, container, false);
 
+        //Txt
 
-// Este es un comentario de prueba
-
+        //Iniciamos
         spinnerSistemas = rootView.findViewById(R.id.spinnerSistemas);
         spinnerTipo = rootView.findViewById(R.id.spinnerTipo);
         spinnerSectores = rootView.findViewById(R.id.spinnerSectores);
@@ -134,18 +142,65 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         spinnerSistemas.setEnabled(false);
         spinnerDispositivos.setEnabled(false);
 
+        btnconfirmarReg=rootView.findViewById(R.id.btnconfirmarReg);
+        btnconfirmarReg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                guardarCambios();
 
+            }
+        });
+
+        btnRegistrar=rootView.findViewById(R.id.btnRegistrar);
+        btnRegistrar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CargarConsultaSistema();
+                habilitarEdicion();
+                btnRegistrar.setVisibility(View.GONE);
+                btnEditar.setVisibility(View.GONE);
+                btnConfirmar.setVisibility(View.GONE);
+                btnScan.setVisibility(View.GONE);
+                btnConsultar.setVisibility(View.GONE);
+                btnconfirmarReg.setVisibility(View.VISIBLE);
+                opcion=12;
+            }
+        });
         // Inicializa el CookieManager
         cookieManager = CookieManager.getInstance();
         btnConfirmar=rootView.findViewById(R.id.btnConfirmar);
         btnConfirmar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                guardarCambios();
+                guardarJson();
+                btnConfirmar.setVisibility(View.GONE);
+                btnconfirmarReg.setVisibility(View.GONE);
+                btnScan.setVisibility(View.VISIBLE);
+                btnConsultar.setVisibility(View.VISIBLE);
+                btnRegistrar.setVisibility(View.VISIBLE);
             }
         });
+        //Proceso txtVenSaldo
+        calendar = Calendar.getInstance();
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        txtVenSaldo.setOnClickListener(v -> {
+            DatePickerDialog datePickerDialog = new DatePickerDialog(getContext(),
+                    (view, year, month, dayOfMonth) -> {
+                        // Establecer la fecha seleccionada en el EditText en el formato deseado
+                        calendar.set(year, month, dayOfMonth);
+                        txtVenSaldo.setText(dateFormat.format(calendar.getTime()));
+                    },
+                    calendar.get(Calendar.YEAR),
+                    calendar.get(Calendar.MONTH),
+                    calendar.get(Calendar.DAY_OF_MONTH));
 
+            datePickerDialog.show();
+        });
         btnScan = rootView.findViewById(R.id.btnScan);
+        //2196F3
+
+
+
         btnScan.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -169,7 +224,9 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         btnConsultar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                btnRegistrar.setVisibility(View.GONE);
                 cargarCookies();
+                cadena = txtResultado.getText().toString();
                 //CargarConsultaDispositivo();
                 //CargarConsultaSistema();
                 //CargarConsultaSubsistema();
@@ -178,6 +235,11 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             }
         });
 
+        btnScan.setBackgroundColor(R.color.gray);
+        btnScan.setBackgroundColor(Color.rgb(33,150,243));
+        btnConsultar.setBackgroundColor(Color.rgb(33,150,243));
+        btnEditar.setBackgroundColor(Color.rgb(33,150,243));
+        btnConfirmar.setBackgroundColor(Color.rgb(33,150,243));
         ableSpiners(false);
         return rootView;
     }
@@ -222,10 +284,16 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
         if (result != null) {
             if (result.getContents() != null) {
-                txtResultado.setText(result.getContents());
-                cadena = txtResultado.getText().toString();
-                btnConsultar.setVisibility(View.VISIBLE);
-                btnScan.setVisibility(View.GONE);
+                if (campoNS){
+                    txtResultado.setText(result.getContents());
+                    cadena = txtResultado.getText().toString();
+                    btnConsultar.setVisibility(View.VISIBLE);
+                    btnScan.setVisibility(View.GONE);
+                }
+                else{
+                    txtIdTelefono.setText(result.getContents());
+                }
+
             } else {
                 Toast.makeText(requireContext(), "Escaneo cancelado o sin éxito", Toast.LENGTH_SHORT).show();
             }
@@ -254,6 +322,15 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         } catch (JSONException e) {
             //throw new RuntimeException(e);
         }
+        JSONObject detallesArray3;
+        try {
+            detallesArray3 =response.getJSONObject("registro");
+            if (detallesArray3!= null){
+                Log.i("Respuesta", detallesArray3.toString());
+            }
+        } catch (JSONException e) {
+            //throw new RuntimeException(e);
+        }
 
 
         detallesArray = response.optJSONArray("Detalles");
@@ -269,8 +346,8 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             } else {
                 Log.i("msjSpinner", String.valueOf(idTipoSubSistema));
                 try {
+                    seguir=true;
                     JSONObject detallesObject = detallesArray.getJSONObject(0);
-                    idGrupo = detallesObject.getInt("idGrupo");
                     idSector = detallesObject.getInt("idSubsistema");
                     idRadio = detallesObject.getInt("radio");
                     idSistema = detallesObject.getInt("idSistema");
@@ -285,6 +362,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                     txtTelefono.setText(detallesObject.optString("telefono"));
                     txtVenSaldo.setText(detallesObject.optString("fecha_vencimiento"));
                     txtSubradio.setText(detallesObject.optString("subradio"));
+                    idGrupo = detallesObject.getInt("idGrupo");
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -349,9 +427,6 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             CargarConsultaDispositivo();
         }
 
-
-
-
         // Consulta Dispositivos
         detallesArray = response.optJSONArray("Dispositivos");
         if (detallesArray != null){
@@ -393,10 +468,6 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                 CargarConsultaRadio();
             }
         }
-
-
-
-
 
         // Consulta Radios
 
@@ -526,10 +597,12 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         progressDialog.setMessage("Cargando..."); // Mensaje que se mostrará durante la carga
         progressDialog.setCancelable(false); // No permite cancelar el diálogo
         progressDialog.show(); // Mostrar el diálogo de progreso
-        String url = "https://webservice.htech.mx/consultar.php?opcion=40&numero_de_serie=HTPPM-2321007&nombre_json=Detalles";
+        String url = "https://webservice.htech.mx/consultar.php?opcion=40&numero_de_serie="+cadena+"&nombre_json=Detalles";
         jsonRequestWebService = new JsonObjectRequest(Request.Method.GET, url, null, this, this);
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
         Log.i("msj2", url);
+        Log.i("msj2", cadena);
+
     }
 
     public void CargarConsultaSistema() {
@@ -579,6 +652,8 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         spinnerRadios.setAdapter(null);
     }
     private void habilitarEdicion() {
+        opcion=13;
+        campoNS=false;
         txtNombre.setEnabled(true);
         txtDescripcion.setEnabled(true);
         txtBT.setEnabled(true);
@@ -588,7 +663,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         txtVenSaldo.setEnabled(true);
         txtIdTelefono.setEnabled(true);
         btnConfirmar.setVisibility(View.VISIBLE);
-        btnScan.setVisibility(View.GONE);
+        btnScan.setVisibility(View.VISIBLE);
         btnEditar.setVisibility(View.GONE);
         spinnerTipo.setEnabled(true);
         spinnerSectores.setEnabled(true);
@@ -598,6 +673,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     }
 
     private void guardarCambios() {
+        campoNS=true;
         txtNombre.setEnabled(false);
         txtDescripcion.setEnabled(false);
         txtBT.setEnabled(false);
@@ -609,6 +685,8 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         btnConfirmar.setVisibility(View.GONE);
         btnScan.setVisibility(View.VISIBLE);
         btnConsultar.setVisibility(View.VISIBLE);
+        btnconfirmarReg.setVisibility(View.GONE);
+        btnRegistrar.setVisibility(View.VISIBLE);
         btnEditar.setVisibility(View.GONE);
         spinnerTipo.setEnabled(false);
         spinnerSectores.setEnabled(false);
@@ -618,7 +696,6 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
          guardarJson();
         // Aquí puedes guardar los cambios en la base de datos o realizar otra acción necesaria
     }
-
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -685,9 +762,11 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     public void guardarJson() {
         JSONObject detalles = new JSONObject();
         try {
-
-            int opcion =13;
-            detalles.put("nombre_json", "envioDatos");
+            if (opcion == 12){
+                detalles.put("nombre_json", "registro");
+            } else if (opcion == 13) {
+                detalles.put("nombre_json", "envioDatos");
+            }
             detalles.put("opcion", opcion);
             detalles.put("id_sistema", idSistema);
             detalles.put("id_grupo", idGrupo);
@@ -707,7 +786,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             Utils.mostrarMensaje(getContext(), detalles.toString());
             Log.i("MensajeJson", detalles.toString());
             CamposLimpios();
-
+            opcion=0;
         } catch (JSONException e) {
             e.printStackTrace();
         }
