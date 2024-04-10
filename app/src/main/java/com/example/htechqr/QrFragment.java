@@ -593,10 +593,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
 
     public void CargarWebService() {
-        progressDialog = new ProgressDialog(getContext());
-        progressDialog.setMessage("Cargando..."); // Mensaje que se mostrará durante la carga
-        progressDialog.setCancelable(false); // No permite cancelar el diálogo
-        progressDialog.show(); // Mostrar el diálogo de progreso
+
         String url = "https://webservice.htech.mx/consultar.php?opcion=40&numero_de_serie="+cadena+"&nombre_json=Detalles";
         jsonRequestWebService = new JsonObjectRequest(Request.Method.GET, url, null, this, this);
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
@@ -606,6 +603,10 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     }
 
     public void CargarConsultaSistema() {
+        progressDialog = new ProgressDialog(getContext());
+        progressDialog.setMessage("Cargando..."); // Mensaje que se mostrará durante la carga
+        progressDialog.setCancelable(false); // No permite cancelar el diálogo
+        progressDialog.show(); // Mostrar el diálogo de progreso
         String url = "https://webservice.htech.mx/consultar.php?opcion=34&nombre_json=Sistemas";
         jsonRequestWebService = new JsonObjectRequest(Request.Method.GET, url, null, this, this);
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
