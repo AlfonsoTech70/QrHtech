@@ -107,7 +107,7 @@ public class LoginFragment extends Fragment implements Response.Listener<JSONObj
 
 
             // Navegamos al destino del fragmento deseado
-            navController.navigate(R.id.qrFragment);
+            navController.navigate(R.id.vistaFragment);
         } else {
             switch (requestVal) {
                 case 3:

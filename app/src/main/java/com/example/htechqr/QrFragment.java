@@ -32,6 +32,9 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.viewpager.widget.ViewPager;
+
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -39,6 +42,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.example.htechqr.R;
 import com.example.htechqr.Utils;
 import com.example.htechqr.VolleySingleton;
+import com.google.android.material.tabs.TabLayout;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import org.json.JSONArray;
@@ -46,13 +50,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
-public class QrFragment extends Fragment implements Response.Listener<JSONObject>, Response.ErrorListener, AdapterView.OnItemSelectedListener{
+public class QrFragment extends Fragment implements Response.Listener<JSONObject>, Response.ErrorListener, AdapterView.OnItemSelectedListener, TabLayout.OnTabSelectedListener{
 
     private void cargarCookies() {
         String cookies = cookieManager.getCookie("https://webservice.htech.mx"); // Reemplaza con tu URL
     }
 
     Button btnScan, btnConsultar, btnEditar, btnConfirmar,btnRegistrar,btnconfirmarReg;
+    TabLayout tabLayout;
+    ViewPager viewPager;
+    NavController navController;
     String azul="0x025C91" ;
     String amarillo ="0XFFC61A";
     int opcion;
@@ -72,7 +79,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     EditText txtBT;
 
-    EditText txtID;
+    //EditText txtID;
     JSONArray fuentes, redes, plantas;
     Spinner spinnerSistemas, spinnerSectores, spinnerRadios, spinnerDispositivos, spinnerTipo;
     EditText txtTelefono, txtIdTelefono;
@@ -120,13 +127,15 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         //Txt
 
         //Iniciamos
+       // tabLayout = rootView.findViewById(R.id.tabGrupo);
+        //viewPager = rootView.findViewById(R.id.viewPager);
         spinnerSistemas = rootView.findViewById(R.id.spinnerSistemas);
         spinnerTipo = rootView.findViewById(R.id.spinnerTipo);
         spinnerSectores = rootView.findViewById(R.id.spinnerSectores);
         spinnerRadios = rootView.findViewById(R.id.spinnerRadios);
         spinnerDispositivos = rootView.findViewById(R.id.spinnerDispositivos);
         txtResultado = rootView.findViewById(R.id.txtResultado);
-        txtID = rootView.findViewById(R.id.txtID);
+       //txtID = rootView.findViewById(R.id.txtID);
         txtDescripcion= rootView.findViewById(R.id.txtDescripcion);
         txtIdTelefono = rootView.findViewById(R.id.txtIdTelefono);
         txtNombre = rootView.findViewById(R.id.txtNombre);
@@ -354,7 +363,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                     idDispositivo = detallesObject.getInt("dispositivo");
                     idTipoSubSistema = detallesObject.getInt("tipo_subsistema");
                     Log.i("msjSpinner", String.valueOf(idTipoSubSistema));
-                    txtID.setText(detallesObject.optString("idDispositivo"));
+                    //txtID.setText(detallesObject.optString("idDispositivo"));
                     txtIdTelefono.setText(detallesObject.optString("telefono_num_serie"));
                     txtNombre.setText(detallesObject.optString("nombre"));
                     txtDescripcion.setText(detallesObject.optString("descripcion"));
@@ -599,7 +608,6 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
         Log.i("msj2", url);
         Log.i("msj2", cadena);
-
     }
 
     public void CargarConsultaSistema() {
@@ -638,14 +646,14 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     }
 
     public void CamposLimpios(){
-        txtIdTelefono.setText("-");
-        txtNombre.setText("-");
-        txtID.setText("-");
-        txtDescripcion.setText("-");
-        txtBT.setText("-");
-        txtTelefono.setText("-");
-        txtSubradio.setText("-");
-        txtVenSaldo.setText("-");
+        txtIdTelefono.setText("");
+        txtNombre.setText("");
+        //txtID.setText("-");
+        txtDescripcion.setText("");
+        txtBT.setText("");
+        txtTelefono.setText("");
+        txtSubradio.setText("");
+        txtVenSaldo.setText("");
         spinnerSistemas.setAdapter(null);
         spinnerDispositivos.setAdapter(null);
         spinnerSectores.setAdapter(null);
@@ -658,7 +666,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         txtNombre.setEnabled(true);
         txtDescripcion.setEnabled(true);
         txtBT.setEnabled(true);
-        txtID.setEnabled(true);
+        //txtID.setEnabled(true);
         txtTelefono.setEnabled(true);
         txtSubradio.setEnabled(true);
         txtVenSaldo.setEnabled(true);
@@ -678,7 +686,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         txtNombre.setEnabled(false);
         txtDescripcion.setEnabled(false);
         txtBT.setEnabled(false);
-        txtID.setEnabled(false);
+        //txtID.setEnabled(false);
         txtTelefono.setEnabled(false);
         txtSubradio.setEnabled(false);
         txtVenSaldo.setEnabled(false);
@@ -694,7 +702,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         spinnerRadios.setEnabled(false);
         spinnerSistemas.setEnabled(false);
         spinnerDispositivos.setEnabled(false);
-         guardarJson();
+        guardarJson();
         // Aquí puedes guardar los cambios en la base de datos o realizar otra acción necesaria
     }
 
@@ -835,5 +843,20 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                 break;
         }
         ableSpiners(true);
+    }
+
+    @Override
+    public void onTabSelected(TabLayout.Tab tab) {
+
+    }
+
+    @Override
+    public void onTabUnselected(TabLayout.Tab tab) {
+
+    }
+
+    @Override
+    public void onTabReselected(TabLayout.Tab tab) {
+
     }
 }
