@@ -131,6 +131,8 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         //viewPager = rootView.findViewById(R.id.viewPager);
         spinnerSistemas = rootView.findViewById(R.id.spinnerSistemas);
         spinnerTipo = rootView.findViewById(R.id.spinnerTipo);
+        if (spinnerTipo == null)
+            Log.e("error","es null");
         spinnerSectores = rootView.findViewById(R.id.spinnerSectores);
         spinnerRadios = rootView.findViewById(R.id.spinnerRadios);
         spinnerDispositivos = rootView.findViewById(R.id.spinnerDispositivos);
@@ -244,6 +246,8 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             }
         });
 
+        spinnerTipo.setOnItemSelectedListener(this);
+        spinnerSectores.setOnItemSelectedListener(this);
         btnScan.setBackgroundColor(R.color.gray);
         btnScan.setBackgroundColor(Color.rgb(33,150,243));
         btnConsultar.setBackgroundColor(Color.rgb(33,150,243));
@@ -355,7 +359,6 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             } else {
                 Log.i("msjSpinner", String.valueOf(idTipoSubSistema));
                 try {
-                    seguir=true;
                     JSONObject detallesObject = detallesArray.getJSONObject(0);
                     idSector = detallesObject.getInt("idSubsistema");
                     idRadio = detallesObject.getInt("radio");
@@ -372,9 +375,12 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                     txtVenSaldo.setText(detallesObject.optString("fecha_vencimiento"));
                     txtSubradio.setText(detallesObject.optString("subradio"));
                     idGrupo = detallesObject.getInt("idGrupo");
+                    Log.i("ConDetalles", detallesArray.toString());
+                    seguir=true;
 
                 } catch (JSONException e) {
                     e.printStackTrace();
+                    Log.i("ConDetalles", detallesArray.toString());
                 }
                 btnConsultar.setVisibility(View.GONE);
                 btnScan.setVisibility(View.VISIBLE);
@@ -590,6 +596,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                 }
             }
 
+
             seleccionarSub();
             progressDialog.dismiss(); // Ocultar el diálogo de progreso
             //spinerON=true;
@@ -600,9 +607,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         }
     }
 
-
     public void CargarWebService() {
-
         String url = "https://webservice.htech.mx/consultar.php?opcion=40&numero_de_serie="+cadena+"&nombre_json=Detalles";
         jsonRequestWebService = new JsonObjectRequest(Request.Method.GET, url, null, this, this);
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
@@ -638,6 +643,7 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         VolleySingleton.getInstanciaVolley(getContext()).addToRequestQueue(jsonRequestWebService);
         Log.i("msj2", url);
     }
+
     public void envioDatos(JSONObject detalles) {
         String url = "https://webservice.htech.mx/insertar.php";
         jsonRequestWebService = new JsonObjectRequest(Request.Method.POST, url, detalles,this, this);
