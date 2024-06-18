@@ -33,6 +33,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import androidx.viewpager.widget.ViewPager;
 
 import com.android.volley.Request;
@@ -70,10 +71,10 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
     int idGrupo=0;
     EditText txtResultado; //Número de serie
     EditText txtNombre;
-    int idSistema=1;
-    int idRadio, idDispositivo=1;
-    int idSector = 5;
-    int idTipoSubSistema=1;
+    int idSistema=0;
+    int idRadio, idDispositivo=0;
+    int idSector = 0;
+    int idTipoSubSistema=0;
     EditText txtDescripcion;
     ProgressDialog progressDialog;
 
@@ -124,7 +125,6 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_qr, container, false);
 
-        //Txt
 
         //Iniciamos
        // tabLayout = rootView.findViewById(R.id.tabGrupo);
@@ -355,22 +355,25 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
                 btnConsultar.setVisibility(View.VISIBLE);
                 btnScan.setVisibility(View.VISIBLE);
                 btnEditar.setVisibility(View.GONE);
-                progressDialog.dismiss(); // Ocultar el diálogo de progreso
             } else {
                 Log.i("msjSpinner", String.valueOf(idTipoSubSistema));
                 try {
                     JSONObject detallesObject = detallesArray.getJSONObject(0);
-                    idSector = detallesObject.getInt("idSubsistema");
-                    idRadio = detallesObject.getInt("radio");
-                    idSistema = detallesObject.getInt("idSistema");
-                    idDispositivo = detallesObject.getInt("dispositivo");
-                    idTipoSubSistema = detallesObject.getInt("tipo_subsistema");
+                    idSector = detallesObject.optInt("idSubsistema", -1); // Valor por defecto -1
+                    idRadio = detallesObject.optInt("radio", -1); // Valor por defecto -1
+                    idSistema = detallesObject.optInt("idSistema", -1); // Valor por defecto -1
+                    idDispositivo = detallesObject.optInt("dispositivo", -1); // Valor por defecto -1
+                    idTipoSubSistema = detallesObject.optInt("tipo_subsistema", -1); // Valor por defecto -1
+                    idGrupo = detallesObject.optInt("idGrupo", -1); // Valor por defecto -1
                     Log.i("msjSpinner", String.valueOf(idTipoSubSistema));
                     //txtID.setText(detallesObject.optString("idDispositivo"));
-                    txtIdTelefono.setText(detallesObject.optString("telefono_num_serie"));
+                    txtTelefono.setText(detallesObject.optString("telefono", ""));
+                    txtVenSaldo.setText(detallesObject.optString("fecha_vencimiento", ""));
+                    txtSubradio.setText(detallesObject.optString("subradio", ""));
+                    txtIdTelefono.setText(detallesObject.optString("telefono_num_serie", ""));
+                    txtBT.setText(detallesObject.optString("bluetooth", ""));
                     txtNombre.setText(detallesObject.optString("nombre"));
                     txtDescripcion.setText(detallesObject.optString("descripcion"));
-                    txtBT.setText(detallesObject.optString("bluetooth"));
                     txtTelefono.setText(detallesObject.optString("telefono"));
                     txtVenSaldo.setText(detallesObject.optString("fecha_vencimiento"));
                     txtSubradio.setText(detallesObject.optString("subradio"));
@@ -714,59 +717,48 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     @Override
     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
-        Log.i("msjspiner2", "Entra. "+ parent.toString() );
-        if (spinerON)
-        {
+        Log.i("msjspiner2", "Entra. " + parent.toString());
+        if (spinerON) {
             if (parent.getId() == R.id.spinnerSistemas) {
                 ableSpiners(false);
                 idSistema = position + 1;
-                Log.i("SPINER2", String.valueOf(idSistema));
+                Log.i("SPINER2", "idSistema: " + idSistema);
                 ableSpiners(false);
                 CargarConsultaSubsistema();
             } else if (parent.getId() == R.id.spinnerTipo) {
                 idTipoSubSistema = position;
-                Log.i("SPINER2","entro a ON2");
+                Log.i("SPINER2", "idTipoSubSistema: " + idTipoSubSistema);
                 ableSpiners(false);
                 seleccionarSub();
-            }
-            else if (parent.getId() == R.id.spinnerRadios) {
+            } else if (parent.getId() == R.id.spinnerRadios) {
                 for (int i = 0; i < idsRadios.size(); i++) {
                     Log.i("msjjj " + i, String.valueOf(idsRadios.get(i)));
                 }
-                idRadio = idsRadios.get(position) ;
-                Log.i("msjjj", String.valueOf(idRadio));
+                idRadio = idsRadios.get(position);
+                Log.i("msjjj", "idRadio: " + idRadio);
                 Log.i("msjjj", String.valueOf(position));
-                Log.i("SPINER2","entro a ON3");
-            }
-            else if (parent.getId() == R.id.spinnerDispositivos) {
+                Log.i("SPINER2", "entro a ON3");
+            } else if (parent.getId() == R.id.spinnerDispositivos) {
                 for (int i = 0; i < idsDispositivos.size(); i++) {
                     Log.i("msjjj " + i, String.valueOf(idsDispositivos.get(i)));
                 }
-                idDispositivo = idsDispositivos.get(position) ;
-                Log.i("msjjj", String.valueOf(idDispositivo));
+                idDispositivo = idsDispositivos.get(position);
+                Log.i("msjjj", "idDispositivo: " + idDispositivo);
                 Log.i("msjjj", String.valueOf(position));
-                Log.i("SPINER2","entro a ON4");
-
-            }
-            else if (parent.getId() == R.id.spinnerSectores) {
-                if (idTipoSubSistema==0){
-                    idSector= idsFuentes.get((position));
-                } else if (idTipoSubSistema==1) {
-                    idSector= idsRedes.get((position));
-                }
-                else if (idTipoSubSistema==2) {
-                    idSector= idsPlantas.get((position));
+                Log.i("SPINER2", "entro a ON4");
+            } else if (parent.getId() == R.id.spinnerSectores) {
+                if (idTipoSubSistema == 0) {
+                    idSector = idsFuentes.get(position);
+                } else if (idTipoSubSistema == 1) {
+                    idSector = idsRedes.get(position);
+                } else if (idTipoSubSistema == 2) {
+                    idSector = idsPlantas.get(position);
                 }
 
-                Log.i("msjjj", String.valueOf(idSector));
+                Log.i("msjjj", "idSector: " + idSector);
                 Log.i("msjjj", String.valueOf(position));
-                Log.i("SPINER2","entro a ON4");
-
+                Log.i("SPINER2", "entro a ON4");
             }
-
-//            ableSpiners(true);
-//            spinerON= true;
         }
     }
 
@@ -792,16 +784,17 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
             detalles.put("telefono_num_serie", txtIdTelefono.getText().toString());
             detalles.put("telefono", txtTelefono.getText().toString());
             detalles.put("fecha_vencimiento", txtVenSaldo.getText().toString());
+            detalles.put("subradio", txtSubradio.getText().toString());
             detalles.put("bluetooth", txtBT.getText().toString());
             detalles.put("dispositivo", idDispositivo);
             detalles.put("radio", idRadio);
-            detalles.put("subradio", txtSubradio.getText().toString());
             Log.i("idSistema", String.valueOf(idSistema));
             envioDatos(detalles);
             Utils.mostrarMensaje(getContext(), detalles.toString());
             Log.i("MensajeJson", detalles.toString());
             CamposLimpios();
             opcion=0;
+            //navigateToSensorFragment();
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -850,6 +843,12 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
         }
         ableSpiners(true);
     }
+    private void navigateToSensorFragment() {
+        Bundle bundle = new Bundle();
+        bundle.putInt("idSistema", idSistema);
+        bundle.putInt("idGrupo", idGrupo);
+        Navigation.findNavController(requireView()).navigate(R.id.action_qrFragment_to_sensorFragment, bundle);
+    }
 
     @Override
     public void onTabSelected(TabLayout.Tab tab) {
@@ -866,3 +865,4 @@ public class QrFragment extends Fragment implements Response.Listener<JSONObject
 
     }
 }
+

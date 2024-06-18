@@ -1,11 +1,10 @@
-package com.example.htechqr;
-
-import android.widget.Spinner;
+package com.example.htechqr;// SensorData.java
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class SensorData {
     private int idSistema;
     private String idSensor;
-    private Spinner spinnerSectores1, spinnerTipo1;
     private String idSubsistema;
     private String idDispositivo;
     private String idFeature;
@@ -63,20 +62,6 @@ public class SensorData {
 
     public void setIdSensor(String idSensor) {
         this.idSensor = idSensor;
-    }
-
-    public Spinner getSpinnerSectores1() {
-        return spinnerSectores1;
-    }
-
-    public void setSpinnerSectores1(Spinner spinnerSectores1){this.spinnerSectores1=spinnerSectores1;
-    }
-
-    public Spinner getSpinnerTipo1() {
-        return spinnerTipo1;
-    }
-
-    public void setSpinnerTipo1(Spinner spinnerTipo1){this.spinnerTipo1=spinnerTipo1;
     }
 
     public String getIdSubsistema() {
@@ -413,5 +398,58 @@ public class SensorData {
 
     public void setUnidades(String unidades) {
         this.unidades = unidades;
+    }
+
+    public JSONObject toJson() {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("idSistema", idSistema);
+            jsonObject.put("idSensor", idSensor);
+            jsonObject.put("idSubsistema", idSubsistema);
+            jsonObject.put("idDispositivo", idDispositivo);
+            jsonObject.put("idFeature", idFeature);
+            jsonObject.put("calle", calle);
+            jsonObject.put("colonia", colonia);
+            jsonObject.put("cp", cp);
+            jsonObject.put("tipoSensor", tipoSensor);
+            jsonObject.put("municipio", municipio);
+            jsonObject.put("area", area);
+            jsonObject.put("datoMaximo", datoMaximo);
+            jsonObject.put("datoMinimo", datoMinimo);
+            jsonObject.put("alarma", alarma);
+            jsonObject.put("altura", altura);
+            jsonObject.put("datoActual", datoActual);
+            jsonObject.put("fechaUltimo", fechaUltimo);
+            jsonObject.put("grupo", grupo);
+            jsonObject.put("estado", estado);
+            jsonObject.put("correoEnviado", correoEnviado);
+            jsonObject.put("online", online);
+            jsonObject.put("maximo", maximo);
+            jsonObject.put("x", x);
+            jsonObject.put("y", y);
+            jsonObject.put("intervalo", intervalo);
+            jsonObject.put("conectado", conectado);
+            jsonObject.put("fechaEstado", fechaEstado);
+            jsonObject.put("coordinador", coordinador);
+            jsonObject.put("prueba", prueba);
+            jsonObject.put("fechaAConsultar", fechaAConsultar);
+            jsonObject.put("bateria", bateria);
+            jsonObject.put("pycom", pycom);
+            jsonObject.put("dispositivo", dispositivo);
+            jsonObject.put("wmt", wmt);
+            jsonObject.put("tipoSignal", tipoSignal);
+            jsonObject.put("led", led);
+            jsonObject.put("send_rssi", send_rssi);
+            jsonObject.put("rssi", rssi);
+            jsonObject.put("rssi_cat", rssi_cat);
+            jsonObject.put("hora_reporte", hora_reporte);
+            jsonObject.put("tipoSensorTexto", tipoSensorTexto);
+            jsonObject.put("municipioTexto", municipioTexto);
+            jsonObject.put("grupoTexto", grupoTexto);
+            jsonObject.put("unidades", unidades);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonObject;
     }
 }

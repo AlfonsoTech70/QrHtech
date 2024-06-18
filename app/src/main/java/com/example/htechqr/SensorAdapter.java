@@ -1,8 +1,14 @@
+// SensorAdapter.java
 package com.example.htechqr;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -10,31 +16,27 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.SensorViewHolder> {
 
     private List<SensorData> sensorList;
-    private List<String> nombreFuentes;
-    private List<String> nombreRedes;
-    private List<String> nombrePlantas;
-    private List<Integer> idsFuentes;
-    private List<Integer> idsRedes;
-    private List<Integer> idsPlantas;
-    static final String[] opciones = {
+    private List<String> nombreFuentes = new ArrayList<>();
+    private List<String> nombreRedes = new ArrayList<>();
+    private List<String> nombrePlantas = new ArrayList<>();
+    private final String[] opciones = {
             "Fuentes de abastecimiento",
             "Fuentes de distribución",
             "Plantas de tratamiento"
     };
+    private final OnMapClickListener mapClickListener;
 
-    public SensorAdapter(List<SensorData> sensorList, List<String> nombreFuentes, List<String> nombreRedes, List<String> nombrePlantas, List<Integer> idsFuentes, List<Integer> idsRedes, List<Integer> idsPlantas) {
+    public SensorAdapter(List<SensorData> sensorList, OnMapClickListener mapClickListener) {
         this.sensorList = sensorList;
-        this.nombreFuentes = nombreFuentes;
-        this.nombreRedes = nombreRedes;
-        this.nombrePlantas = nombrePlantas;
-        this.idsFuentes = idsFuentes;
-        this.idsRedes = idsRedes;
-        this.idsPlantas = idsPlantas;
+        this.mapClickListener = mapClickListener;
     }
 
     @NonNull
@@ -47,7 +49,7 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.SensorView
     @Override
     public void onBindViewHolder(@NonNull SensorViewHolder holder, int position) {
         SensorData sensorData = sensorList.get(position);
-        holder.bind(sensorData);
+        holder.bind(sensorData, opciones, nombreFuentes, nombreRedes, nombrePlantas, mapClickListener);
     }
 
     @Override
@@ -57,7 +59,7 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.SensorView
 
     public class SensorViewHolder extends RecyclerView.ViewHolder {
         private Spinner spinnerSectores1, spinnerTipo1;
-        private TextView txtDispositivo, txtIntervalo, txtConectado, txtRssi, txtUnidades, txtIdDispositivo;
+        private TextView txtDispositivo, txtIntervalo, txtConectado, txtRssi, txtUnidades, txtIdDispositivo, txtMapa;
 
         public SensorViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -69,44 +71,108 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.SensorView
             txtUnidades = itemView.findViewById(R.id.txtUnidades);
             spinnerSectores1 = itemView.findViewById(R.id.spinnerSectores1);
             spinnerTipo1 = itemView.findViewById(R.id.spinnerTipo1);
+            txtMapa = itemView.findViewById(R.id.txtMapa);
         }
 
-        public void bind(SensorData sensorData) {
+        public void bind(SensorData sensorData, String[] opciones, List<String> nombreFuentes, List<String> nombreRedes, List<String> nombrePlantas, OnMapClickListener mapClickListener) {
             txtIdDispositivo.setText(sensorData.getIdDispositivo());
             txtIntervalo.setText(sensorData.getIntervalo());
-            txtConectado.setText(sensorData.getConectado());
             txtRssi.setText(sensorData.getRssi());
             txtUnidades.setText(sensorData.getUnidades());
+
+            String estadoConectado;
+            switch (sensorData.getConectado()) {
+                case "0":
+                    estadoConectado = "Desconectado";
+                    break;
+                case "1":
+                    estadoConectado = "Conectado";
+                    break;
+                default:
+                    estadoConectado = "Sin estado";
+                    break;
+            }
+            txtConectado.setText(estadoConectado);
 
             ArrayAdapter<String> tiposAdapter = new ArrayAdapter<>(itemView.getContext(),
                     android.R.layout.simple_spinner_item, opciones);
             tiposAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             spinnerTipo1.setAdapter(tiposAdapter);
-            configurarSpinnerSectores();
+
+            spinnerTipo1.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    Log.d("SensorAdapter", "spinnerTipo1 onItemSelected: position=" + position);
+                    List<String> data;
+                    switch (position) {
+                        case 0:
+                            data = nombreFuentes;
+                            break;
+                        case 1:
+                            data = nombreRedes;
+                            break;
+                        case 2:
+                            data = nombrePlantas;
+                            break;
+                        default:
+                            data = new ArrayList<>();
+                            break;
+                    }
+                    updateSectoresSpinner(data);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    // No action needed
+                }
+            });
+
+            // Set OnClickListener for the txtMapa
+            txtMapa.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mapClickListener.onMapClick(sensorData.getY(), sensorData.getX(), sensorData.toJson());
+                }
+            });
+
+            // Update spinnerSectores1 initially
+            int initialPosition = spinnerTipo1.getSelectedItemPosition();
+            List<String> initialData = getDataByPosition(initialPosition, nombreFuentes, nombreRedes, nombrePlantas);
+            updateSectoresSpinner(initialData);
         }
 
-        private void configurarSpinnerSectores() {
-            ArrayAdapter<String> adapter;
-            switch (SensorFragment.idTipoSubSistema) {
+        private List<String> getDataByPosition(int position, List<String> nombreFuentes, List<String> nombreRedes, List<String> nombrePlantas) {
+            switch (position) {
                 case 0:
-                    adapter = new ArrayAdapter<>(itemView.getContext(), android.R.layout.simple_spinner_item, nombreFuentes);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinnerSectores1.setAdapter(adapter);
-                    break;
+                    return nombreFuentes;
                 case 1:
-                    adapter = new ArrayAdapter<>(itemView.getContext(), android.R.layout.simple_spinner_item, nombreRedes);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinnerSectores1.setAdapter(adapter);
-                    break;
+                    return nombreRedes;
                 case 2:
-                    adapter = new ArrayAdapter<>(itemView.getContext(), android.R.layout.simple_spinner_item, nombrePlantas);
-                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                    spinnerSectores1.setAdapter(adapter);
-                    break;
+                    return nombrePlantas;
                 default:
-                    throw new IllegalStateException("Unexpected value: " + SensorFragment.idTipoSubSistema);
+                    return new ArrayList<>();
             }
-            adapter.notifyDataSetChanged(); // Notificar cambios en el adaptador
         }
+
+        private void updateSectoresSpinner(List<String> data) {
+            Log.d("SensorAdapter", "updateSectoresSpinner with data: " + data);
+            ArrayAdapter<String> sectoresAdapter = new ArrayAdapter<>(itemView.getContext(),
+                    android.R.layout.simple_spinner_item, data);
+            sectoresAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerSectores1.setAdapter(sectoresAdapter);
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    public void updateData(List<String> nombreFuentes, List<String> nombreRedes, List<String> nombrePlantas) {
+        this.nombreFuentes = nombreFuentes;
+        this.nombreRedes = nombreRedes;
+        this.nombrePlantas = nombrePlantas;
+        Log.d("SensorAdapter", "Updated data - Fuentes: " + nombreFuentes.size() + ", Redes: " + nombreRedes.size() + ", Plantas: " + nombrePlantas.size());
+        notifyDataSetChanged();
+    }
+
+    public interface OnMapClickListener {
+        void onMapClick(String latitude, String longitude, JSONObject sensorData);
     }
 }
